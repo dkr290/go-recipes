@@ -11,6 +11,7 @@ func main() {
 
 	router := gin.Default()
 	router.POST("/recipes", handler.NewRecipeHandler)
+	router.GET("/recipes", handler.ListRecipesHandler)
 	router.Run("127.0.0.1:8080")
 
 }

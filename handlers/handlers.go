@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/dkr290/go-recipes/models"
@@ -12,6 +15,19 @@ import (
 type Handler struct{}
 
 var recipes = make([]models.Recipe, 0)
+
+func init() {
+
+	file, err := os.ReadFile("recipes.json")
+	if err != nil {
+		log.Fatalf("Error read recipes")
+
+	}
+	if err = json.Unmarshal([]byte(file), &recipes); err != nil {
+		log.Fatalf("Error unmarshalling the recipes.json")
+	}
+
+}
 
 func NewHandlers() *Handler {
 
@@ -32,4 +48,9 @@ func (h *Handler) NewRecipeHandler(c *gin.Context) {
 	recipes = append(recipes, recipe)
 	c.JSON(http.StatusOK, recipe)
 
+}
+
+func (h *Handler) ListRecipesHandler(c *gin.Context) {
+
+	c.JSON(http.StatusOK, recipes)
 }
