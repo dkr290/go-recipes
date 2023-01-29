@@ -12,3 +12,15 @@ type Recipe struct {
 	Instructions []string  `json:"instructions"`
 	PublishedAt  time.Time `json:"publishedAt"`
 }
+
+func GetAll() []Recipe {
+
+	rr := make([]Recipe, 0)
+	return rr
+}
+
+func GetRecipe() Recipe {
+
+	var r1 Recipe
+	return r1
+}
