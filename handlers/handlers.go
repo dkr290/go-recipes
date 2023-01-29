@@ -85,3 +85,27 @@ func (h *Handler) UpdateRecipeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, recipe)
 
 }
+
+func (h *Handler) DeleteRecipehandler(c *gin.Context) {
+
+	id := c.Param("id")
+	index := -1
+
+	for i := 0; i < len(recipes); i++ {
+		if recipes[i].ID == id {
+			index = i
+		}
+	}
+	if index == -1 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Recipe not found",
+		})
+		return
+	}
+	// this is how to delete excluding only the index the item
+	recipes = append(recipes[:index], recipes[index+1:]...)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Recipe with id " + id + " has been deleted",
+	})
+
+}

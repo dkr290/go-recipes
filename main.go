@@ -13,6 +13,7 @@ func main() {
 	router.POST("/recipes", handler.NewRecipeHandler)
 	router.GET("/recipes", handler.ListRecipesHandler)
 	router.PUT("/recipes/:id", handler.UpdateRecipeHandler)
+	router.DELETE("/recipes/:id", handler.DeleteRecipehandler)
 	router.Run("127.0.0.1:8080")
 
 }
