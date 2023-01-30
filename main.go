@@ -1,3 +1,20 @@
+// Recipes API
+//
+// This is a sample recipes API.
+//
+//	   Schemes: http
+//  Host: localhost:8080
+//	   BasePath: /
+//	   Version: 1.0.0
+//	   Contact: ggg
+//
+//	   Consumes:
+//	   - application/json
+//
+//	   Produces:
+//	   - application/json
+// swagger:meta
+
 package main
 
 import (

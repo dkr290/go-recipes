@@ -35,6 +35,17 @@ func NewHandlers() *Handler {
 	return &Handler{}
 }
 
+// swagger:operation POST /recipes recipes newRecipe
+// Create a new recipe
+// ---
+// produces:
+// - application/json
+// responses:
+//     '200':
+//         description: Successful operation
+//     '400':
+//         description: Invalid input
+
 func (h *Handler) NewRecipeHandler(c *gin.Context) {
 
 	recipe := models.GetRecipe()
@@ -51,11 +62,40 @@ func (h *Handler) NewRecipeHandler(c *gin.Context) {
 
 }
 
+// swagger:operation GET /recipes recipes listRecipes
+// Returns list of recipes
+// ---
+// produces:
+// - application/json
+// responses:
+//
+//	'200':
+//	    description: Successful operation
 func (h *Handler) ListRecipesHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, recipes)
 }
 
+// swagger:operation PUT /recipes/{id} recipes updateRecipe
+// Update an existing recipe
+// ---
+// parameters:
+//   - name: id
+//     in: path
+//     description: ID of the recipe
+//     required: true
+//     type: string
+//
+// produces:
+// - application/json
+// responses:
+//
+//	'200':
+//	    description: Successful operation
+//	'400':
+//	    description: Invalid input
+//	'404':
+//	    description: Invalid recipe ID
 func (h *Handler) UpdateRecipeHandler(c *gin.Context) {
 
 	id := c.Param("id")
@@ -87,6 +127,24 @@ func (h *Handler) UpdateRecipeHandler(c *gin.Context) {
 
 }
 
+// swagger:operation DELETE /recipes/{id} recipes deleteRecipe
+// Delete an existing recipe
+// ---
+// produces:
+// - application/json
+// parameters:
+//   - name: id
+//     in: path
+//     description: ID of the recipe
+//     required: true
+//     type: string
+//
+// responses:
+//
+//	'200':
+//	    description: Successful operation
+//	'404':
+//	    description: Invalid recipe ID
 func (h *Handler) DeleteRecipehandler(c *gin.Context) {
 
 	id := c.Param("id")
@@ -111,6 +169,22 @@ func (h *Handler) DeleteRecipehandler(c *gin.Context) {
 
 }
 
+// swagger:operation GET /recipes/search recipes findRecipe
+// Search recipes based on tags
+// ---
+// produces:
+// - application/json
+// parameters:
+//   - name: tag
+//     in: query
+//     description: recipe tag
+//     required: true
+//     type: string
+//
+// responses:
+//
+//	'200':
+//	    description: Successful operation
 func (h *Handler) SearchRecipesHandler(c *gin.Context) {
 	tag := c.Query("tag")
 	listOfRecipes := models.GetAll()

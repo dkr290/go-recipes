@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// swagger:parameters recipes get all
 type Recipe struct {
 	ID           string    `json:"id"`
 	Name         string    `json:"name"`
