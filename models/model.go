@@ -24,7 +24,7 @@ type Recipe struct {
 	PublishedAt  time.Time `json:"publishedAt"`
 }
 
-var mclient *mongo.Client
+var MClient *mongo.Client
 var db string
 var ctx = context.Background()
 
@@ -58,16 +58,19 @@ func Connect() {
 		log.Fatal("You must set your 'INITIAL_CREATEDB' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
 	}
 
-	mclient, _ = mongo.Connect(ctx, options.Client().ApplyURI(uri))
-	if err := mclient.Ping(context.TODO(), readpref.Primary()); err != nil {
+	if cl, err := mongo.Connect(ctx, options.Client().ApplyURI(uri)); err != nil {
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		MClient = cl
+	}
+
+	if err := MClient.Ping(context.TODO(), readpref.Primary()); err != nil {
 		log.Fatal(err)
 	}
 	log.Println("Connected to Mongo DB server")
-	defer func() {
-		if err := mclient.Disconnect(context.TODO()); err != nil {
-			panic(err)
-		}
-	}()
+
 	if createdb == "true" {
 		initialDbCreate()
 
@@ -84,8 +87,8 @@ func initialDbCreate() {
 	for _, recipe := range recipes {
 		listOfRecipes = append(listOfRecipes, recipe)
 	}
-	collection := mclient.Database(db).Collection("recipes")
-	log.Println(collection)
+	collection := MClient.Database(db).Collection("recipes")
+
 	inseartManyResult, err := collection.InsertMany(context.Background(), listOfRecipes)
 	if err != nil {
 		log.Fatal(err)
@@ -95,7 +98,8 @@ func initialDbCreate() {
 
 func ListRecipes() ([]Recipe, error) {
 
-	collection := mclient.Database(db).Collection("recipes")
+	collection := MClient.Database(db).Collection("recipes")
+
 	curr, err := collection.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
@@ -108,7 +112,7 @@ func ListRecipes() ([]Recipe, error) {
 		recipes = append(recipes, recipe)
 
 	}
-	log.Println(recipes)
+
 	return recipes, nil
 
 }
