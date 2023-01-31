@@ -73,6 +73,13 @@ func (h *Handler) NewRecipeHandler(c *gin.Context) {
 //	    description: Successful operation
 func (h *Handler) ListRecipesHandler(c *gin.Context) {
 
+	recipes, err := models.ListRecipes()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+	}
 	c.JSON(http.StatusOK, recipes)
 }
 

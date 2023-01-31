@@ -19,13 +19,14 @@ package main
 
 import (
 	"github.com/dkr290/go-recipes/handlers"
+	"github.com/dkr290/go-recipes/models"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 
 	handler := handlers.NewHandlers()
-
+	models.Connect()
 	router := gin.Default()
 	router.POST("/recipes", handler.NewRecipeHandler)
 	router.GET("/recipes", handler.ListRecipesHandler)
