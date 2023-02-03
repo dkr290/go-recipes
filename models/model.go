@@ -137,3 +137,29 @@ func NewRecipe(c *gin.Context) (Recipe, error) {
 	}
 	return recipe, nil
 }
+
+func UpdateRecipe(c *gin.Context) (Recipe, error) {
+
+	id := c.Param("id")
+	var recipe Recipe
+	collection := MClient.Database(db).Collection("recipes")
+
+	if err := c.ShouldBindJSON(&recipe); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+		return recipe, err
+
+	}
+	objectId, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.D{{"_id", objectId}}
+	update := bson.D{{"$set", bson.D{
+		{"name", recipe.Name},
+		{"instructions", recipe.Instructions},
+		{"tags", recipe.Tags},
+		{"ingredients", recipe.Ingredients}}}}
+	_, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return recipe, err
+	}
+	return recipe, nil
+}
