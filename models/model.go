@@ -84,13 +84,25 @@ func Connect() {
 
 func initialDbCreate() {
 
-	recipes := make([]Recipe, 0)
+	type RecipeString struct {
+		//swagger:ignore
+		ID           string    `json:"id"`
+		Name         string    `json:"name"`
+		Tags         []string  `json:"tags"`
+		Ingredients  []string  `json:"ingredients"`
+		Instructions []string  `json:"instructions"`
+		PublishedAt  time.Time `json:"publishedAt"`
+	}
+
+	recipes := make([]RecipeString, 0)
 	file, _ := os.ReadFile("recipes.json")
+
 	_ = json.Unmarshal([]byte(file), &recipes)
 	var listOfRecipes []interface{}
 	for _, recipe := range recipes {
 		listOfRecipes = append(listOfRecipes, recipe)
 	}
+
 	collection := MClient.Database(db).Collection("recipes")
 
 	inseartManyResult, err := collection.InsertMany(context.Background(), listOfRecipes)
@@ -151,13 +163,14 @@ func UpdateRecipe(c *gin.Context) (Recipe, error) {
 
 	}
 	objectId, _ := primitive.ObjectIDFromHex(id)
-	filter := bson.D{{"_id", objectId}}
-	update := bson.D{{"$set", bson.D{
+	filter := bson.M{"_id": objectId}
+
+	_, err := collection.UpdateOne(ctx, filter, bson.D{{"$set", bson.D{
 		{"name", recipe.Name},
 		{"instructions", recipe.Instructions},
 		{"tags", recipe.Tags},
-		{"ingredients", recipe.Ingredients}}}}
-	_, err := collection.UpdateOne(ctx, filter, update)
+		{"ingredients", recipe.Ingredients},
+	}}})
 	if err != nil {
 		return recipe, err
 	}
