@@ -27,6 +27,7 @@ func main() {
 
 	handler := handlers.NewHandlers()
 	models.Connect()
+	models.RedisConnect()
 	router := gin.Default()
 	router.POST("/recipes", handler.NewRecipeHandler)
 	router.GET("/recipes", handler.ListRecipesHandler)

@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -28,6 +30,7 @@ type Recipe struct {
 	PublishedAt  time.Time          `json:"publishedAt" bson:"publishedAt"`
 }
 
+var redisClient *redis.Client
 var MClient *mongo.Client
 var db string
 var ctx = context.Background()
@@ -112,24 +115,55 @@ func initialDbCreate() {
 	log.Println("inserted recipes:", len(inseartManyResult.InsertedIDs))
 }
 
+func RedisConnect() {
+
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+	redis_host := os.Getenv("REDIS_HOST")
+	if redis_host == "" {
+		log.Fatal("You must set your 'REDIS_HOST' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
+	}
+	redisClient = redis.NewClient(&redis.Options{
+		Addr:     redis_host + ":6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	status := redisClient.Ping(context.Background())
+	fmt.Println(status)
+}
+
 func ListRecipes() ([]Recipe, error) {
 
 	collection := MClient.Database(db).Collection("recipes")
+	val, err := redisClient.Get(ctx, "recipes").Result()
 
-	curr, err := collection.Find(ctx, bson.M{})
-	if err != nil {
+	if err == redis.Nil {
+		log.Printf("Request to MongoDB")
+		cur, err := collection.Find(ctx, bson.M{})
+		if err != nil {
+			return nil, err
+		}
+		defer cur.Close(ctx)
+		recipes := make([]Recipe, 0)
+		for cur.Next(ctx) {
+			var recipe Recipe
+			cur.Decode(&recipe)
+			recipes = append(recipes, recipe)
+		}
+		data, _ := json.Marshal(recipes)
+		redisClient.Set(ctx, "recipes", string(data), 0)
+		return recipes, nil
+
+	} else if err != nil {
 		return nil, err
+	} else {
+		log.Printf("Request to Redis")
+		recipes := make([]Recipe, 0)
+		json.Unmarshal([]byte(val), &recipes)
+		return recipes, nil
 	}
-	defer curr.Close(ctx)
-	recipes := make([]Recipe, 0)
-	for curr.Next(ctx) {
-		var recipe Recipe
-		curr.Decode(&recipe)
-		recipes = append(recipes, recipe)
-
-	}
-
-	return recipes, nil
 
 }
 
@@ -147,6 +181,8 @@ func NewRecipe(c *gin.Context) (Recipe, error) {
 	if err != nil {
 		return recipe, err
 	}
+	log.Println("Remove data from Redis")
+	redisClient.Del(ctx, "recipes")
 	return recipe, nil
 }
 
@@ -174,5 +210,7 @@ func UpdateRecipe(c *gin.Context) (Recipe, error) {
 	if err != nil {
 		return recipe, err
 	}
+	log.Println("Remove data from Redis")
+	redisClient.Del(ctx, "recipes")
 	return recipe, nil
 }
