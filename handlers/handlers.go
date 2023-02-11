@@ -12,8 +12,6 @@ import (
 
 type Handler struct{}
 
-var recipes = models.GetAll()
-
 // func init() {
 
 // 	file, err := os.ReadFile("recipes.json")
