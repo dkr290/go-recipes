@@ -214,3 +214,38 @@ func UpdateRecipe(c *gin.Context) (Recipe, error) {
 	redisClient.Del(ctx, "recipes")
 	return recipe, nil
 }
+
+func DeleteRecipe(c *gin.Context) (*mongo.DeleteResult, error) {
+	id := c.Param("id")
+	collection := MClient.Database(db).Collection("recipes")
+
+	objectId, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": objectId}
+	result, err := collection.DeleteOne(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("Remove data from Redis")
+	redisClient.Del(ctx, "recipes")
+	return result, nil
+}
+
+func FindSingleRecipe(c *gin.Context) (Recipe, error) {
+	id := c.Param("id")
+	collection := MClient.Database(db).Collection("recipes")
+	var recipe Recipe
+
+	objectId, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": objectId}
+
+	err := collection.FindOne(context.TODO(), filter).Decode(&recipe)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			// This error means your query did not match any documents.
+			return recipe, err
+		}
+
+	}
+	return recipe, nil
+
+}

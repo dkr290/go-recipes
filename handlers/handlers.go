@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -132,25 +133,17 @@ func (h *Handler) UpdateRecipeHandler(c *gin.Context) {
 //	    description: Invalid recipe ID
 func (h *Handler) DeleteRecipehandler(c *gin.Context) {
 
-	// id := c.Param("id")
-	// index := -1
-
-	// for i := 0; i < len(recipes); i++ {
-	// 	if recipes[i].ID == id {
-	// 		index = i
-	// 	}
-	// }
-	// if index == -1 {
-	// 	c.JSON(http.StatusNotFound, gin.H{
-	// 		"error": "Recipe not found",
-	// 	})
-	// 	return
-	// }
-	// // this is how to delete excluding only the index the item
-	// recipes = append(recipes[:index], recipes[index+1:]...)
-	// c.JSON(http.StatusOK, gin.H{
-	// 	"message": "Recipe with id " + id + " has been deleted",
-	// })
+	result, err := models.DeleteRecipe(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	f := fmt.Sprint(result.DeletedCount)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Recipe has been deleted: " + f,
+	})
 
 }
 
@@ -172,7 +165,15 @@ func (h *Handler) DeleteRecipehandler(c *gin.Context) {
 //	    description: Successful operation
 func (h *Handler) SearchRecipesHandler(c *gin.Context) {
 	tag := c.Query("tag")
-	listOfRecipes := models.GetAll()
+	listOfRecipes := make([]models.Recipe, 0)
+	recipes, err := models.ListRecipes()
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "There was search werror occured " + err.Error(),
+		})
+		return
+	}
 	for i := 0; i < len(recipes); i++ {
 		found := false
 		for _, t := range recipes[i].Tags {
@@ -186,4 +187,17 @@ func (h *Handler) SearchRecipesHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, listOfRecipes)
 
+}
+
+func (h *Handler) SearchSingleRecipehandler(c *gin.Context) {
+
+	recipe, err := models.FindSingleRecipe(c)
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "There was no document with this id found " + err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, recipe)
 }
