@@ -29,12 +29,19 @@ func main() {
 	models.Connect()
 	models.RedisConnect()
 	router := gin.Default()
-	router.POST("/recipes", handler.NewRecipeHandler)
+	authorized := router.Group("/")
+
 	router.GET("/recipes", handler.ListRecipesHandler)
-	router.PUT("/recipes/:id", handler.UpdateRecipeHandler)
 	router.GET("/recipes/search", handler.SearchRecipesHandler)
-	router.DELETE("/recipes/:id", handler.DeleteRecipehandler)
-	router.GET("/recipes/:id", handler.SearchSingleRecipehandler)
+
+	authorized.Use(handlers.AuthMiddleware())
+	{
+		authorized.POST("/recipes", handler.NewRecipeHandler)
+		authorized.GET("/recipes/:id", handler.SearchSingleRecipehandler)
+		authorized.PUT("/recipes/:id", handler.UpdateRecipeHandler)
+
+		authorized.DELETE("/recipes/:id", handler.DeleteRecipehandler)
+	}
 
 	router.Run("127.0.0.1:8080")
 
