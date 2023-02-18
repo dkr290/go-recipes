@@ -21,6 +21,10 @@ type JWTOutput struct {
 	Expires time.Time `json:"expires"`
 }
 
+func NewAuthHandler() *AuthHandler {
+	return &AuthHandler{}
+}
+
 func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 
 	var user models.User
@@ -66,13 +70,73 @@ func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, jwtOutput)
 }
 
-func AuthMiddleware() gin.HandlerFunc {
+func (handler *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.GetHeader("X-API-KEY") != os.Getenv("X-API-KEY") {
-			c.AbortWithStatus(401)
+		tokenValue := c.GetHeader("Authorization")
+		claims := &Claims{}
+		tkn, err := jwt.ParseWithClaims(tokenValue, claims, func(t *jwt.Token) (interface{}, error) {
+			return []byte(os.Getenv("JWT_SECRET")), nil
+		})
 
+		if err != nil {
+			c.AbortWithStatus(http.StatusUnauthorized)
 		}
+
+		if tkn == nil || !tkn.Valid {
+			c.AbortWithStatus(http.StatusUnauthorized)
+		}
+
 		c.Next()
 
 	}
+}
+
+func (handler *AuthHandler) RefreshHandler(c *gin.Context) {
+	tokenValue := c.GetHeader("Authorization")
+	claims := &Claims{}
+
+	tkn, err := jwt.ParseWithClaims(tokenValue, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	if tkn == nil || !tkn.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid Token",
+		})
+		return
+	}
+
+	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Token is not expired yet",
+		})
+		return
+	}
+
+	expirationTime := time.Now().Add(5 * time.Minute)
+	claims.ExpiresAt = expirationTime.Unix()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(os.Getenv("JWT_SECRET"))
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	jwtOutput := JWTOutput{
+		Token:   tokenString,
+		Expires: expirationTime,
+	}
+
+	c.JSON(http.StatusOK, jwtOutput)
+
 }

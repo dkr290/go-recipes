@@ -30,11 +30,13 @@ func main() {
 	models.RedisConnect()
 	router := gin.Default()
 	authorized := router.Group("/")
+	authHandler := handlers.NewAuthHandler()
 
 	router.GET("/recipes", handler.ListRecipesHandler)
+	router.POST("/signin", authHandler.SignInHandler)
 	router.GET("/recipes/search", handler.SearchRecipesHandler)
 
-	authorized.Use(handlers.AuthMiddleware())
+	authorized.Use(authHandler.AuthMiddleware())
 	{
 		authorized.POST("/recipes", handler.NewRecipeHandler)
 		authorized.GET("/recipes/:id", handler.SearchSingleRecipehandler)
