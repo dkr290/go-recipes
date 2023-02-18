@@ -35,6 +35,7 @@ func main() {
 	router.GET("/recipes", handler.ListRecipesHandler)
 	router.POST("/signin", authHandler.SignInHandler)
 	router.GET("/recipes/search", handler.SearchRecipesHandler)
+	router.POST("/refresh", authHandler.RefreshHandler)
 
 	authorized.Use(authHandler.AuthMiddleware())
 	{

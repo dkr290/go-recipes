@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -156,4 +157,16 @@ func FindSingleRecipe(c *gin.Context) (Recipe, error) {
 	}
 	return recipe, nil
 
+}
+
+func GetUserPass(c *gin.Context) *mongo.SingleResult {
+	h := sha256.New()
+	var user User
+	collection := MClient.Database(db).Collection("users")
+	cur := collection.FindOne(context.TODO(), bson.M{
+		"username": user.Username,
+		"password": string(h.Sum([]byte(user.Password))),
+	})
+
+	return cur
 }

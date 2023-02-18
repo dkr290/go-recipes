@@ -35,12 +35,23 @@ func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 		return
 	}
 
-	if user.Username != "admin" || user.Password != "password" {
+	cur := models.GetUserPass(c)
+	if cur.Err() != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid username or password",
+			"error": "Invalid Username or password",
 		})
-		return
 	}
+
+	// cur := handler.collection.FindOne(handler.ctx, bson.M{
+	// 	"username": user.Username,
+	// 	"password": string(h.Sum([]byte(user.Password))),
+	// })
+	// if cur.Err() != nil {
+	// 	c.JSON(http.StatusUnauthorized, gin.H{
+	// 		"error": "Invalid usernbame or password",
+	// 	})
+	// 	return
+	// }
 
 	expirationTime := time.Now().Add(10 * time.Minute)
 
