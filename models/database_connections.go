@@ -2,14 +2,17 @@ package models
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
+	redisStore "github.com/gin-contrib/sessions/redis"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -35,7 +38,7 @@ func Connect() {
 
 	if cl, err := mongo.Connect(ctx, options.Client().ApplyURI(uri)); err != nil {
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("Error Connect to mongodb", err)
 		}
 	} else {
 		MClient = cl
@@ -50,6 +53,38 @@ func Connect() {
 		initialDbCreate()
 
 	}
+
+	initialusers := os.Getenv("INITIAL_CREATE_USERS")
+
+	if initialusers == "" {
+		log.Fatal("You must set your 'INITIAL_CREATE_USERS' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
+	}
+	if initialusers == "true" {
+		InitUsersAuth()
+
+	}
+
+}
+
+func InitUsersAuth() {
+
+	users := map[string]string{
+
+		"admin":  "Password1234",
+		"user01": "Pass123",
+		"user02": "Passw2",
+	}
+
+	collection := MClient.Database(db).Collection("users")
+
+	h := sha256.New()
+	for username, password := range users {
+		collection.InsertOne(ctx, bson.M{
+			"username": username,
+			"password": string(h.Sum([]byte(password))),
+		})
+	}
+	log.Println("Creating intial users")
 
 }
 
@@ -100,4 +135,10 @@ func RedisConnect() {
 
 	status := redisClient.Ping(context.Background())
 	fmt.Println(status)
+}
+
+func NewRedisStore() redisStore.Store {
+
+	store, _ := redisStore.NewStore(10, "tcp", "localhost:6379", "", []byte("secret"))
+	return store
 }
