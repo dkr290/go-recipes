@@ -20,6 +20,7 @@ package main
 import (
 	"github.com/dkr290/go-recipes/handlers"
 	"github.com/dkr290/go-recipes/models"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,17 +29,20 @@ func main() {
 	handler := handlers.NewHandlers()
 	models.Connect()
 	models.RedisConnect()
+	store := models.NewRedisStore()
 	router := gin.Default()
+	router.Use(sessions.Sessions("recipes_api", store))
 	authorized := router.Group("/")
 	authHandler := handlers.NewAuthHandler()
 
-	router.GET("/recipes", handler.ListRecipesHandler)
 	router.POST("/signin", authHandler.SignInHandler)
-	router.GET("/recipes/search", handler.SearchRecipesHandler)
+	router.POST("/signout", authHandler.SignOutHandler)
 	router.POST("/refresh", authHandler.RefreshHandler)
 
 	authorized.Use(authHandler.AuthMiddleware())
 	{
+		authorized.GET("/recipes", handler.ListRecipesHandler)
+		authorized.GET("/recipes/search", handler.SearchRecipesHandler)
 		authorized.POST("/recipes", handler.NewRecipeHandler)
 		authorized.GET("/recipes/:id", handler.SearchSingleRecipehandler)
 		authorized.PUT("/recipes/:id", handler.UpdateRecipeHandler)

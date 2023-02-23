@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/xid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -159,14 +161,31 @@ func FindSingleRecipe(c *gin.Context) (Recipe, error) {
 
 }
 
-func GetUserPass(c *gin.Context) *mongo.SingleResult {
+func GetUserPass(c *gin.Context) {
 	h := sha256.New()
 	var user User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		log.Fatal("Cannot bind to jston invalid authentication string")
+	}
 	collection := MClient.Database(db).Collection("users")
 	cur := collection.FindOne(context.TODO(), bson.M{
 		"username": user.Username,
 		"password": string(h.Sum([]byte(user.Password))),
 	})
+	if cur.Err() != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid Username or password " + cur.Err().Error(),
+		})
+		log.Fatal("")
+	}
 
-	return cur
+	sessionToken := xid.New().String()
+	session := sessions.Default(c)
+	session.Set("username", user.Username)
+	session.Set("token", sessionToken)
+	session.Save()
+
 }
